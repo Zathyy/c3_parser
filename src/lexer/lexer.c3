@@ -3,14 +3,40 @@ module lexer;
 import std::collections::list;
 import std::io;
 // TODO: 
-// - add emit function to add a token to a list
+// - add emit function to add a token to a list 
 // - more lex functions
 
-// struct Lexer 
-// {
-// 	String source;
-// 	uint pos;
-// }
+//struct Lexer 
+//{
+//	String source;
+//	uint pos;
+//	List{ Token } tokens;
+//}
+
+List{ TokenType } g_tokens;
+List{ uint } g_starts;
+List{ uint } g_ends;
+
+fn void init(Allocator alloc = mem)
+{
+	g_tokens.init(alloc);
+	g_starts.init(alloc);
+	g_ends.init(alloc);
+}
+
+fn void free()
+{
+	g_tokens.free();
+	g_starts.free();
+	g_ends.free();
+}
+
+fn void emit(TokenType type, uint start, uint end)
+{
+	g_tokens.push(type);
+	g_starts.push(start);
+	g_ends.push(end);
+}
 
 <*
  useful when determining the difference between types, variables, constants
@@ -138,33 +164,32 @@ fn uint lex_whitespace(String src, uint* pos)
     }
 }
 
-
-fn uint lex_identifier(String src, uint* pos) 
+fn void lex_identifier(String src, uint* pos) 
 {
 	int start_pos = *pos;
 	advance(src, pos); // we have at least one valid char
 
 	// how many other valid chars?
-	while (is_alpha_num(peek(src, *pos)))
+	while (!is_eof(src, *pos) && is_alpha_num(peek(src, *pos)))
 	{
 		advance(src, pos);
 	}
 
-	return start_pos;
+	emit(TokenType.IDENT, start_pos, *pos);
 }
 
-fn uint lex_number(String src, uint* pos)
+fn void lex_number(String src, uint* pos)
 {
     int start_pos = *pos;
 	advance(src, pos); // we have at least one valid char
 
 	// how many other valid chars?
-    while (is_digit(peek(src, *pos)))
+    while (!is_eof(src, *pos) && is_digit(peek(src, *pos)))
 	{
         advance(src, pos);
     }
 	
-    return start_pos;
+	emit(TokenType.INTEGER, start_pos, *pos);	
 }
 
 // fn list{Token} emit(void)
@@ -178,7 +203,7 @@ fn uint lex_number(String src, uint* pos)
 *>
 fn TokenType find_token_type(String token)
 {
-	foreach(TokenType item : TokenType.values)
+	foreach (TokenType item : TokenType.values)
 	{
 		if (item.token == "")
 		{
@@ -191,6 +216,7 @@ fn TokenType find_token_type(String token)
 		}
 		
 	}
+
 	return TokenType.INVALID_TOKEN;
 }
 
@@ -213,35 +239,25 @@ fn void lex(String src)
 		if (is_whitespace(src, pos))
 		{
 			lex_whitespace(src, &pos);
-			io::print(" ");
+			continue;
 		}
-		
-		// first non whitespace char found
-		token_start_pos = pos;
+
+		io::printn("passed 1");
 		
 		// Identifiers start with a lower case letter
 		if (is_alpha_lower(src[pos])) 
 		{
 			// TODO: something is going wrong here, non alphanumeric chars are being included
-			token_start_pos = lex_identifier(src, &pos);
-			io::print(src[token_start_pos..pos]);
+			lex_identifier(src, &pos);
+			continue;
 		}
-		else 
+		
+		if (is_digit(src[pos]))
 		{
-			advance(src, &pos);
+			lex_number(src, &pos);
+			continue;
 		}
-		
-		// while (!is_whitespace(src, pos))
-		// {
-		// 	c = peek(src, pos);
 
-		// 	if (is_alpha(c)) 
-		// 	{
-		// 		io::printf("%c", c);
-		// 		token_end_pos = pos;
-		// 	}
-		// 	advance(src, &pos);
-		// }
-		
+		break;
 	}
 }
