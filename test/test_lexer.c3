@@ -14,5 +14,14 @@ fn void test_example()
     // test::eq(some_slice.len, 3);
 	io::printn();
 	
+	lexer::init();
 	lexer::lex(src);
+
+	io::printf("number of tokens: %s \n", lexer::g_tokens.len());
+	for (uint i = 0; i < lexer::g_tokens.len(); i++)
+	{
+		io::printn(src[lexer::g_starts[i]..lexer::g_ends[i]]);
+	}
+
+	lexer::free();
 }
