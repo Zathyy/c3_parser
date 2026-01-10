@@ -227,37 +227,44 @@ fn TokenType find_token_type(String token)
 *>
 fn void lex(String src)
 {
-	uint pos;
-	char c;
-	
-	uint token_start_pos;
-	uint token_end_pos;
+	uint pos = 0;
 	
 	while (!is_eof(src, pos))
 	{
-		
+		char c = peek(src, pos);
+
 		if (is_whitespace(src, pos))
 		{
 			lex_whitespace(src, &pos);
 			continue;
 		}
-
-		io::printn("passed 1");
 		
 		// Identifiers start with a lower case letter
-		if (is_alpha_lower(src[pos])) 
+		if (is_alpha(c))
 		{
 			// TODO: something is going wrong here, non alphanumeric chars are being included
 			lex_identifier(src, &pos);
 			continue;
 		}
 		
-		if (is_digit(src[pos]))
+		if (is_digit(c))
 		{
 			lex_number(src, &pos);
 			continue;
 		}
 
-		break;
+		uint start = pos;
+		advance(src, &pos);
+		switch (peek(src, pos))
+		{
+			case '(':
+				emit(TokenType.LPAREN, start, pos);
+				break;
+			default:
+				emit(TokenType.INVALID_TOKEN, start, pos);
+				break;
+		}
 	}
+
+	emit(TokenType.EOF, pos, pos);
 }
