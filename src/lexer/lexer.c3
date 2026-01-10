@@ -239,10 +239,8 @@ fn void lex(String src)
 			continue;
 		}
 		
-		// Identifiers start with a lower case letter
 		if (is_alpha(c))
 		{
-			// TODO: something is going wrong here, non alphanumeric chars are being included
 			lex_identifier(src, &pos);
 			continue;
 		}
@@ -257,8 +255,30 @@ fn void lex(String src)
 		advance(src, &pos);
 		switch (peek(src, pos))
 		{
+			case ':':
+				if (match(src, &pos, ':'))
+				{
+					emit(TokenType.SCOPE, start, pos);
+				}
+				else
+				{
+					emit(TokenType.COLON, start, pos);
+				}
+				break;
+			case ';':
+				emit(TokenType.EOS, start, pos);
+				break;
 			case '(':
 				emit(TokenType.LPAREN, start, pos);
+				break;
+			case ')':
+				emit(TokenType.RPAREN, start, pos);
+				break;
+			case '{':
+				emit(TokenType.LBRACE, start, pos);
+				break;
+			case '}':
+				emit(TokenType.RBRACE, start, pos);
 				break;
 			default:
 				emit(TokenType.INVALID_TOKEN, start, pos);
