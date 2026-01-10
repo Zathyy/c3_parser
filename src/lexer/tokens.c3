@@ -1,5 +1,20 @@
 module lexer;
 
+import std::collections::list;
+
+struct Token 
+{
+	TokenType type;
+	int start;
+	int end;
+}
+
+struct TokenStream 
+{
+	List{ Token } tokens;
+	String source;
+}
+
 <*
  TokenType has the token value if applicable, else an empty string
  search for a non-empty string for tokens with a pre-defined value
