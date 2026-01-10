@@ -1,14 +1,32 @@
 module lexer;
 
+import std::collections::list;
+import std::io;
 // TODO: 
 // - add emit function to add a token to a list
 // - more lex functions
 
-struct Lexer 
+// struct Lexer 
+// {
+// 	String source;
+// 	uint pos;
+// }
+
+<*
+ useful when determining the difference between types, variables, constants
+*>
+fn bool is_alpha_lower(char c) @inline
 {
-	String source;
-	int pos;
-	int length;
+    return (c >= 'a' && c <= 'z');
+}
+
+<*
+ constants are all upper case
+ custom types start with an upper case letter
+*>
+fn bool is_alpha_upper(char c) @inline
+{
+    return (c >= 'A' && c <= 'Z');
 }
 
 fn bool is_alpha(char c) @inline
@@ -22,112 +40,208 @@ fn bool is_digit(char c) @inline
 }
 
 <*
-	is alpha-numeric
+ is alpha-numeric
 *>
-fn bool is_alnum(char c) @inline 
+fn bool is_alpha_num(char c) @inline 
 {
 	return is_alpha(c) || is_digit(c);
 }
 
-fn bool Lexer.is_eof(&self) @inline 
+fn bool is_whitespace(String src, uint pos) @inline
 {
-	return self.pos >= self.length;
+	switch (peek(src, pos))
+	{
+		case ' ':
+		case '\t':
+		case '\n':
+		case '\r':
+			return true;
+		default:
+			return false;
+	}
 }
 
-fn char Lexer.peek(&self)
+fn bool is_eof(String src, uint pos) @inline 
 {
-	if (self.is_eof()) return 0;
-	return self.source[self.pos];
+	return pos >= src.len;
 }
 
-fn char Lexer.peek_next(&self) 
+<*
+ check char at pos without advancing past
+*>
+fn char peek(String src, uint pos)
 {
-	if (self.is_eof()) return 0;
-	return self.source[self.pos + 1];
+	if (is_eof(src, pos)) return 0;
+	return src[pos];
 }
 
-fn char Lexer.advance(&self)
+<*
+ check char next after pos, without advancing pos
+*>
+fn char peek_next(String src, uint pos) 
 {
-	char c = self.peek();
-	self.pos += 1;
+	if (is_eof(src, pos+1)) return 0;
+	return src[pos + 1];
+}
+
+<*
+ increment pos without returning char
+*>
+fn void advance(String src, uint* pos)
+{
+	if (is_eof(src, *pos))
+	{
+		return;
+	}
+	
+	*pos += 1;
+}
+
+<*
+ read and return char at pos, increment pos
+*>
+fn char peek_advance(String src, uint* pos)
+{
+	char c = peek(src, *pos);
+	*pos += 1;
 	return c;
 }
 
-fn bool Lexer.match(&self, char c) 
+fn bool match(String src, uint* pos, char c) 
 {
-	if (self.peek() == c)
+	if (peek(src, *pos) == c)
 	{
-		self.pos += 1;
+		*pos += 1;
 		return true;
 	}
 
 	return false;
 }
 
-fn int Lexer.lex_whitespace(&self)
+
+<*
+ consumes whitespace
+*>
+fn uint lex_whitespace(String src, uint* pos)
 {
-    int start = self.pos;
+    int start_pos = *pos;
     while (true) 
 	{
-        switch (self.peek())
+		if (is_whitespace(src, *pos)) 
 		{
-            case ' ':
-            case '\t':
-                self.advance();
-                break;
-            default:
-                return start;
-        }
+			advance(src, pos);
+		}
+		else
+		{
+			return start_pos;
+		}
     }
 }
 
-fn int Lexer.lex_identifier(&self) 
-{
-	int start = self.pos;
-	self.advance();
 
-	while (is_alnum(self.peek()))
+fn uint lex_identifier(String src, uint* pos) 
+{
+	int start_pos = *pos;
+	advance(src, pos); // we have at least one valid char
+
+	// how many other valid chars?
+	while (is_alpha_num(peek(src, *pos)))
 	{
-		self.advance();
+		advance(src, pos);
 	}
 
-	return start;
+	return start_pos;
 }
 
-fn int Lexer.lex_number(&self)
+fn uint lex_number(String src, uint* pos)
 {
-    int start = self.pos;
-    self.advance();
+    int start_pos = *pos;
+	advance(src, pos); // we have at least one valid char
 
-    while (is_digit(self.peek()))
+	// how many other valid chars?
+    while (is_digit(peek(src, *pos)))
 	{
-        self.advance();
+        advance(src, pos);
     }
 	
-    return start;
+    return start_pos;
 }
 
-fn void parse(String source)
+// fn list{Token} emit(void)
+// {
+// 	return 
+// }
+
+<*
+ this is a bit inefficient since its iterating over things without a value
+ TODO: separate out tokens with a value, from types of token for faster iteration, but make the thing not a pain to maintain
+*>
+fn TokenType find_token_type(String token)
 {
-	Lexer lexer = { 
-		.source = source,
-		.pos = 0,
-		.length = source.len,
-	};
-
-	while (!lexer.is_eof())
+	foreach(TokenType item : TokenType.values)
 	{
-		int start = lexer.pos;
-
-		switch (lexer.peek())
+		if (item.token == "")
 		{
-			case ' ': nextcase;
-			case '\t': 
-			{
-				lexer.lex_whitespace();
-				//todo: emit
-				break;
-			}
+			continue;
 		}
+		
+		if (token == item.token)
+		{
+			return item;
+		}
+		
+	}
+	return TokenType.INVALID_TOKEN;
+}
+
+<*
+ TODO: output slice of tokens
+ TODO: output slice of start positions for each token
+ TODO: output slice of end positions for each token
+*>
+fn void lex(String src)
+{
+	uint pos;
+	char c;
+	
+	uint token_start_pos;
+	uint token_end_pos;
+	
+	while (!is_eof(src, pos))
+	{
+		
+		if (is_whitespace(src, pos))
+		{
+			lex_whitespace(src, &pos);
+			io::print(" ");
+		}
+		
+		// first non whitespace char found
+		token_start_pos = pos;
+		
+		// Identifiers start with a lower case letter
+		if (is_alpha_lower(src[pos])) 
+		{
+			// TODO: something is going wrong here, non alphanumeric chars are being included
+			token_start_pos = lex_identifier(src, &pos);
+			io::print(src[token_start_pos..pos]);
+		}
+		else 
+		{
+			advance(src, &pos);
+		}
+		
+		// while (!is_whitespace(src, pos))
+		// {
+		// 	c = peek(src, pos);
+
+		// 	if (is_alpha(c)) 
+		// 	{
+		// 		io::printf("%c", c);
+		// 		token_end_pos = pos;
+		// 	}
+		// 	advance(src, &pos);
+		// }
+		
 	}
 }
