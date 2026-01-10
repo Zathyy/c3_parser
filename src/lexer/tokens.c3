@@ -2,12 +2,13 @@ module lexer;
 
 import std::collections::list;
 
-// struct Token 
-// {
-// 	TokenType type;
-// 	uint start;
-// 	uint end;
-// }
+//struct Token 
+//{
+//	TokenType type;
+//	uint start;
+//	uint end;
+//}
+
 
 // struct TokenStream 
 // {
