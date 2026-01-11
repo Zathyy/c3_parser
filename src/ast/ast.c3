@@ -3,6 +3,10 @@
 
 	# The core idea
 	- Full data oriented design, everything is just indices into arrays
+
+	TODO: 
+		- add debug to print a single ast nod
+		- add debug file to dump the whole ast to a json file
 *>
 module ast;
 
