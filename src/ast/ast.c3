@@ -22,12 +22,37 @@ struct TokenRange
 	uint end;
 }
 
+struct Param
+{
+	uint name;   // IDENT token index
+	uint type;    // index into Expr list
+	TokenRange range;
+}
+
 struct Ast 
 {
 	List{ Decl } decls;	
+	List{ Param } params;
 	List{ Expr } exprs;
 	List{ Stmt } stmts;
 	Allocator alloc;
+}
+
+fn void ast_init(Ast* ast, Allocator alloc = mem)
+{
+	ast.decls.init(alloc);
+	ast.params.init(alloc);
+	ast.exprs.init(alloc);
+	ast.stmts.init(alloc);
+	ast.alloc = alloc;
+}
+
+fn void ast_free(Ast* ast)
+{
+	ast.decls.free();
+	ast.params.free();
+	ast.exprs.free();
+	ast.stmts.free();
 }
 
 fn Decl* get_decl(Ast* ast, uint index) @inline
