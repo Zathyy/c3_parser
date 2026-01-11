@@ -8,36 +8,45 @@ enum DeclKind : char
 	FUNCTION,
 }
 
+<*
+	Decleration.
+*>
 struct Decl 
 {
 	DeclKind kind;
-	uint start_token;
-	uint end_token;
+	TokenRange range;
 
 	union
 	{
-		struct block
+		// foo :: bar :: example
+		struct mod
 		{
-			uint stmt_start;
-			uint stmt_count;
+			uint start;
+			uint len;
 		}
 
-		struct ret 
+		// import decl
+		struct imp
 		{
-			uint expr;
+			uint start;
+			uint len;
 		}
 
-		struct expr 
+		// struct
+		struct str 
 		{
-			uint expr;
+			uint name; // Foo
+			uint member_start; // index into Decl[] or Stmt[]
+			uint member_count; // number of members
+		}
+
+		// function
+		struct func
+		{
+			uint name;
+			uint param_start;
+			uint param_count;
+			uint body_stmt;
 		}
 	}
-}
-
-struct FunctionDecl
-{
-	uint name_token;     // index into Token[]
-	uint params_start;   // index into Param arena
-	uint params_count;
-	uint body_stmt;      // index into Stmt arena
 }

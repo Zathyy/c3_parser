@@ -7,11 +7,13 @@ enum ExprKind
 	CALL
 }
 
+<*
+	Expression
+*>
 struct Expr 
 {
 	ExprKind kind;
-	uint start_token;
-	uint end_token;
+	TokenRange range;
 
 	union 
 	{
