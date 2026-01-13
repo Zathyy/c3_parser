@@ -32,9 +32,16 @@ fn void test_parser()
 	parser.count = (uint)tokens.len();
 	parser.pos = 0;
 
-	foreach (token : tokens)
+	for (uint? idx = 0; @catch(idx) != parser::NO_MORE_TOKENS; idx = parser::parse_decl(&parser))
 	{
-		uint idx = parser::parse_decl(&parser);
-		io::printn(idx);
+		if (catch err = idx)
+		{
+			io::printn(err);
+		}
+		else
+		{
+			io::printn(idx);
+		}
+		io::printn();
 	}
 }

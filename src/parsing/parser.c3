@@ -4,9 +4,14 @@ import std::io;
 import c3::lexer;
 import ast;
 
-const uint INVALID_INDEX = uint.max;
+faultdef
+	INVALID_INDEX,
+	NO_MORE_TOKENS,
+	NO_MATCH,
+	PARSE_FAIL, /// Unrecoverable parsing error
+;
 
-struct Parser 
+struct Parser
 {
 	Ast* ast;
 	Token[] tokens;
@@ -14,96 +19,95 @@ struct Parser
 	uint pos;
 }
 
-fn Token* peek(Parser* p)
+<*
+	Check next token, without advancing.
+	@return? NO_MORE_TOKENS : "End of tokens array"
+*>
+fn Token*? peek(Parser* parser)
 {
-	if (p.pos >= p.count) return null;
-	return &p.tokens[p.pos];
+	if (parser.pos >= parser.count) return NO_MORE_TOKENS?;
+	return &parser.tokens[parser.pos];
+}
+<*
+	Check if next token matches type. If so, advance and return that token.
+	Use when token value is needed.
+	@return? NO_MORE_TOKENS : "End of tokens array"
+	@return? NO_MATCH : "Token types did not match"
+*>
+fn Token*? match(Parser* parser, TokenType token_type)
+{
+	Token* token = peek(parser)!;
+	if (token != null && token.type == token_type)
+	{
+		parser.pos += 1;
+		return token;
+	}
+	return NO_MATCH?;
 }
 
-fn bool match(Parser* p, TokenType t)
+<*
+	Parse full function block.
+	@return? PARSE_FAIL
+*>
+fn uint? parse_function(Parser* parser)
 {
-	Token* token = peek(p);
-	if (token != null && token.type == t)
+	uint decl_idx = ast::new_decl(parser.ast);
+	Decl* decl = ast::get_decl(parser.ast, decl_idx);
+
 	{
-		p.pos += 1;
-		return true;
+		defer catch log::error("Failed to start parsing function");
+		match(parser, TokenType.FUNC) ?? PARSE_FAIL?!;
+		log::verbose("Started parsing function");
+		decl.kind = DeclKind.FUNCTION;
+		decl.range.start = parser.pos;
 	}
 
-	return false;
-}
-
-fn uint expect(Parser* p, TokenType t)
-{
-	uint idx = p.pos;
-	if (match(p, t))
+	/// TODO: parse return type
 	{
-		return idx;
+		defer catch log::error("Failed to parse function return type");
 	}
 
-	// not a valid token, return invalid_index
-	Token* got = peek(p);
-
-	if (p.pos < p.count)
 	{
-		p.pos += 1;
+		defer catch log::error("Failed to parse function name");
+		Token* function_name = match(parser, TokenType.FUNC) ?? PARSE_FAIL?!;
+		log::debug("Function name: %s", function_name.text);
+		decl.func.name = parser.pos;
 	}
 
-	return INVALID_INDEX;
-}
-
-fn uint parse_function(Parser* p)
-{
-	uint decl_idx = ast::new_decl(p.ast); // create new Decl, return index
-	Decl* d = ast::get_decl(p.ast, decl_idx);
-
-	d.kind = DeclKind.FUNCTION;
-	d.range.start = p.pos;
-
-	// fn keyword
-	expect(p, TokenType.FUNC);         
-	Token* name = peek(p);
-	d.func.name = p.pos;
-
-	// function name
-	expect(p, TokenType.IDENT);           
-
-	expect(p, TokenType.LPAREN);
-
-	d.func.param_start = (uint)p.ast.params.len();
+	/// If no left parentheses, ignore and start parsing parameters anyway
+	if (catch err = match(parser, TokenType.LPAREN))
+	{
+		log::warn("While parsing function: no left parentheses");
+	}
+	decl.func.param_start = parser.pos;
 
 	//TODO: parse all params
-	while (!match(p, TokenType.RPAREN))
+	while (!match(parser, TokenType.RPAREN)!!)
 	{
-		// uint param_idx = parse_param(p);
+		// uint param_idx = parse_param(parser);
 		break;
 	}
-	d.func.param_count = ((uint)p.ast.params.len()) - d.func.param_start;
+	decl.func.param_count = (uint)parser.ast.params.len();
 
 	// parse body
-	//d.func.body_stmt = parse_block(p);
+	//decl.func.body_stmt = parse_block(parser);
 
-	d.range.end = p.pos;
+	decl.range.end = parser.pos;
 
 	return decl_idx;
 }
 
 
-fn uint parse_decl(Parser* p)
+fn uint? parse_decl(Parser* parser)
 {
-	Token* token = peek(p);
-	if (token == null)
-	{
-		return INVALID_INDEX;
-	}
-
-	std::io::printf("parsing: %s \n", *token);
-
+	Token* token = peek(parser)!;
+	log::info("Parsing %s", *token);
 	switch (token.type)
 	{
 		case TokenType.FUNC:
-			return parse_function(p);
+			return parse_function(parser);
 		default:
-			p.pos += 1;
-			return INVALID_INDEX;
+			parser.pos += 1;
+			return INVALID_INDEX?;
 	}
 }
