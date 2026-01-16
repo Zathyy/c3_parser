@@ -8,9 +8,9 @@ typedef SourceSpan = String[];
 
 struct Ast 
 {
-	List{ Decleration } decls;
-	List{ Statement } stmts;
-	List{ Expression } exprs;
+	List{ Decl } decls;
+	List{ Stmt } stmts;
+	List{ Expr } exprs;
 
 	Allocator alloc;
 }
