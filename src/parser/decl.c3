@@ -15,18 +15,14 @@ fn Lexer? AstNodeDecl.parse_module(&self, Lexer lexer)
 {
 	Token token = lexer.next() ?? INCOMPATIBLE?!;
 	if (token.type != TokenType.MODULE) return INCOMPATIBLE?;
-	DString module_name;
-	module_name.tinit();
+	self.name.start = lexer.position();
 	Lexer temp_lexer = lexer;
 	while (@ok(@try(token, temp_lexer.next())))
 	{
-		module_name.append(token.text);
 		if (!@ok(@try(token, temp_lexer.next()))) break;
 		if (token.type != TokenType.SCOPE) break;
-		module_name.append("::");
 		lexer = temp_lexer;
 	}
-	// TODO: figure out proper allocator for node data
-	self.name = module_name.copy_str(mem);
+	self.name.end = lexer.position();
 	return lexer;
 }

@@ -9,8 +9,8 @@ enum AstNodeDeclType
 struct AstNodeDecl (Printable)
 {
 	AstNodeDeclType type;
-	String name;
-	String[] attributes;
+	AstRange name;
+	AstRange[] attributes;
 	union
 	{
 		char dummy;
