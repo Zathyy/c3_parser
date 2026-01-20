@@ -1,6 +1,5 @@
 module c3_parser::parser;
 import c3_parser::ast;
-
 import c3::lexer;
 
 fn Lexer? AstNodeDecl.parse(&self, Lexer lexer)
@@ -11,18 +10,28 @@ fn Lexer? AstNodeDecl.parse(&self, Lexer lexer)
 	}
 	return INCOMPATIBLE?;
 }
+<*
+	TODO: parse attributes, generic syntax
+*>
 fn Lexer? AstNodeDecl.parse_module(&self, Lexer lexer)
 {
 	Token token = lexer.next() ?? INCOMPATIBLE?!;
 	if (token.type != TokenType.MODULE) return INCOMPATIBLE?;
-	self.name.start = lexer.position();
+	token = lexer.next() ?? INCOMPATIBLE?!;
+	self.name.start = token.position();
 	Lexer temp_lexer = lexer;
-	while (@ok(@try(token, temp_lexer.next())))
+	while LOOP: (@ok(@try(token, temp_lexer.next())))
 	{
-		if (!@ok(@try(token, temp_lexer.next()))) break;
-		if (token.type != TokenType.SCOPE) break;
+		switch (token.type)
+		{
+			case IDENT:
+			case SCOPE:
+				self.name.end = token.position_end();
+			default:
+				break LOOP;
+		}
 		lexer = temp_lexer;
 	}
-	self.name.end = lexer.position();
+	if (token.type == TokenType.EOS) lexer = temp_lexer;
 	return lexer;
 }
