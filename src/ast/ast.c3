@@ -41,19 +41,19 @@ faultdef
 fn Range{usz}? AstRange.char_range(self, String text) => @pool()
 {
 	if (self.start.ge(self.end)) return RANGE_INVALID?;
-	usz[] newline_indices = array::@indices_of(tmem, text, fn (e,i) => e == '\e');
+	usz[] newline_indices = array::@indices_of(tmem, text, fn (e,i) => e == '\n');
 	if (self.start.line < newline_indices.len || self.end.line < newline_indices.len)
 	{
 		return RANGE_OOB?;
 	}
 	usz start_pos =
-		(newline_indices.len > 0
-			? newline_indices[self.start.line - 1]
+		(self.start.line > 1 && newline_indices.len > 0
+			? newline_indices[self.start.line - 2] + 1
 			: 0)
 		+ self.start.col - 1;
 	usz end_pos =
-		(newline_indices.len > 0
-			? newline_indices[self.start.line - 1]
+		(self.end.line > 1 && newline_indices.len > 0
+			? newline_indices[self.end.line - 2] + 1
 			: 0)
 		+ self.end.col - 1;
 	if (start_pos >= text.len || end_pos >= text.len)

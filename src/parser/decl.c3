@@ -6,6 +6,7 @@ fn Lexer? AstNodeDecl.parse(&self, Lexer lexer)
 {
 	if (try new_lexer = self.parse_module(lexer))
 	{
+		self.type = AstNodeDeclType.MODULE;
 		return new_lexer;
 	}
 	return INCOMPATIBLE?;
