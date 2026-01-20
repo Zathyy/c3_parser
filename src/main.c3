@@ -9,6 +9,6 @@ fn int main(String[] args)
 	lexer.init("module test::new;");
 	AstNode node;
 	node.parse(lexer)!!;
-	io::printn(node.decl);
+	io::printn(node);
 	return 0;
 }

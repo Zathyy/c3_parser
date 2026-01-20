@@ -1,21 +1,31 @@
 module c3_parser::ast;
 
+import std::io;
+
 enum AstNodeDeclType
 {
 	MODULE,
 }
-struct AstNodeDecl
+struct AstNodeDecl (Printable)
 {
 	AstNodeDeclType type;
 	String name;
 	String[] attributes;
 	union
 	{
-		AstNodeDeclModule _module;
+		char dummy;
 		// more types go here later
 	}
 }
-struct AstNodeDeclModule
+
+fn usz? AstNodeDecl.to_format(&self, Formatter* fmt) @dynamic
 {
-	char dummy;
+	switch (self.type)
+	{
+	case MODULE:
+		return fmt.printf("{ <MODULE> name: %s, attributes: %s }",
+			self.name,
+			self.attributes,
+		);
+	}
 }
